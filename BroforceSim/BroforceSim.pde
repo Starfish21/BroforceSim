@@ -39,14 +39,31 @@ void setupFonts()
  ===================================================================================================
 */
 
+class EventAction implements Runnable
+{
+  ControlEvent _event;
+  EventAction()
+  {
+  }
+
+  void setEvent( ControlEvent event )
+  {
+    _event = event;
+  }
+
+  public void run()
+  {
+  };
+}
+
 // Interface Menu class. Defines how it is drawn and what menus follow it.
 class Menu implements ControlListener
 {
   String    _name; // Name of the Menu
   ControlP5 _cp5;  // ControlP5 Instance
   PApplet   _app;
-  Println   _console;
   Runnable  _drawer;
+  HashMap< String, EventAction > _buttons = new HashMap< String, EventAction >();
 
   Menu(String name, PApplet app, Runnable drawer)
   {
@@ -56,32 +73,54 @@ class Menu implements ControlListener
     _drawer = drawer;
 
     _cp5.addListener(this);
+  }
 
-    // Create console ontop of menu.
-    Textarea text = _cp5.addTextarea("console")
-      .setPosition  ( 5, 375 )
-      .setSize      ( 200, 100 )
-      .setFont      ( getFont( "I12" ) )
-      .setLineHeight( 12 )
-      .setColor     ( color( 20 ) )
-      .setColorBackground( color( 0, 40 ) )
-      .setColorForeground( color( 255, 40 ) );
+  int _labelIndex = 0;
+  void createLabel( String text, float x, float y, String font )
+  {
+    _cp5.addTextlabel( "label" + str( _labelIndex++ ) )
+      .setText( text )
+      .setPosition( x, y )
+      .setColor( 20 )
+      .setFont( getFont( font ) );
+  }
 
-    _console = _cp5.addConsole(text);
+  int _buttonIndex = 0;
+  void createNavigationButton( String text, float x, float y, int w, int h, final Menu menu, String font )
+  {
+    String label = "button" + str( _buttonIndex++ );
+    _cp5.addButton( label )
+      .setLabel( text )
+      .setPosition( x, y )
+      .setSize( w, h );
+
+    // Set label properties
+    _cp5.getController( label )
+      .getCaptionLabel()
+      .toUpperCase( false )
+      .setFont( getFont( font ) );
+
+    final Menu that = this;
+    // Set action when pressed
+    _buttons.put( text, new EventAction() {
+        public void run() {
+          println( "Recieved Event from " + _event.getLabel() );
+          that.hide();
+          setMenu( menu );
+        }
+      } );
   }
 
   // Listener function
   void controlEvent(ControlEvent event)
   {
-    if (event.getName().equals(_name)) {
-      float value = event.getValue();
-      println("got value");
-    }
+    EventAction action = _buttons.get( event.getLabel() );
+    action.setEvent( event );
+    action.run();
   }
 
   public void show()
   {
-    console = _console;
     _cp5.show();
     println( "Showing Menu (", _name, ")" );
   }
@@ -93,6 +132,8 @@ class Menu implements ControlListener
 
   public void draw()
   {
+    String title = "BroforceSim 2.0 - " + _name;
+    surface.setTitle( title );
     _drawer.run();
   }
 }
@@ -105,7 +146,12 @@ class Menu implements ControlListener
 */
 
 Menu menu;
-Println console;
+
+void setMenu( Menu newMenu )
+{
+  menu = newMenu;
+  menu.show();
+}
 
 // Main method. Called before draw loop begins.
 void setup()
@@ -118,15 +164,32 @@ void setup()
 
   setupFonts();
 
-  menu = new Menu( "Test", this, new Runnable() {
-      public void run () {
-        fill(255,0,0);
-        rect(10,10,100,100);
+  Menu title, main;
+
+  title = new Menu( "Title", this, new Runnable() {
+      public void run() {
+        fill( 20 );
+        stroke( 20 );
+        rect( 222, 142, 200, 100 );
+
+        fill( 240 );
+        stroke( 240 );
+        rect( 220, 140, 200, 100 );
       }
-    }  );
+    } );
 
-  menu.show();
+  main = new Menu( "Main Menu", this, new Runnable() {
+      public void run() {
+      }
+    } );
 
+  title.createLabel( "BroforceSim 2.0", 225, 150, "R24" );
+  title.createNavigationButton( "Let's go!", 270, 180, 100, 20, main, "R16" );
+
+  main.createNavigationButton( "Go back", 270, 180, 100, 20, title, "R16" );
+  main.hide();
+
+  setMenu( title );
   println( "Initialization Complete" );
 }
 
