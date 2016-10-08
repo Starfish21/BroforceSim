@@ -92,12 +92,15 @@ class Menu implements ControlListener
     _cp5.addButton( label )
       .setLabel( text )
       .setPosition( x, y )
-      .setSize( w, h );
+      .setSize( w, h )
+      .setColorBackground( color( 20 ) )
+      .setColorActive( color( 30 ) );
 
     // Set label properties
     _cp5.getController( label )
       .getCaptionLabel()
       .toUpperCase( false )
+      .setColor( 230 )
       .setFont( getFont( font ) );
 
     final Menu that = this;
@@ -183,10 +186,10 @@ void setup()
       }
     } );
 
-  title.createLabel( "BroforceSim 2.0", 225, 150, "R24" );
-  title.createNavigationButton( "Let's go!", 270, 180, 100, 20, main, "R16" );
+  title.createLabel( "BroforceSim 2.0", 230, 150, "R24" );
+  title.createNavigationButton( "Let's go!", 270, 200, 100, 25, main, "R16" );
 
-  main.createNavigationButton( "Go back", 270, 180, 100, 20, title, "R16" );
+  main.createNavigationButton( "Go back", 270, 180, 100, 25, title, "R16" );
   main.hide();
 
   setMenu( title );
