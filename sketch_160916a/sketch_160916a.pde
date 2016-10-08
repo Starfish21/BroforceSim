@@ -24,7 +24,7 @@ int energyDirection = -1; // if 1, it'll count up how much energy is used.  if -
 final float FRICTION = 4;
 float bigMutationChance = 0.2;
 float hazelStairs = -1;
-boolean saveFramesPerGeneration = true;
+boolean saveFramesPerGeneration = false;
  
 int lastImageSaved = -1;
 float pressureUnit = 500.0/2.37;
