@@ -1,4 +1,4 @@
-final float windowSizeMultiplier = 1.5;
+final float windowSizeMultiplier = 1.0;
 final int SEED = 0;
  
 PFont font;
@@ -79,6 +79,16 @@ float target;
 float force;
 float averageX;
 float averageY;
+float averageVX;
+float averageVY;
+float averageAX;
+float averageAY;
+float[] xtraj;
+float[] ytraj;
+float[] xvtraj;
+float[] yvtraj;
+float[] xatraj;
+float[] yatraj;
 int speed;
 int id;
 boolean stepbystep;
@@ -109,7 +119,7 @@ class Rectangle {
   }
 }
 class Node {
-  float x, y, vx, vy, prevX, prevY, pvx, pvy, m, f, value, valueToBe;
+  float x, y, vx, vy, prevX, prevY, pvx, pvy, ax, ay, m, f, value, valueToBe;
   int operation, axon1, axon2;
   boolean safeInput;
   float pressure;
@@ -133,6 +143,8 @@ class Node {
     x += vx;
     float acc = dist(vx,vy,pvx,pvy);
     totalNodeNausea += acc*acc*nauseaUnit;
+    ax = vx - pvx;
+    ay = vy - pvy;
     pvx = vx;
     pvy = vy;
      
@@ -1055,10 +1067,18 @@ void simulate() {
 void setAverages() {
   averageX = 0;
   averageY = 0;
+  averageVX = 0;
+  averageVY = 0;
+  averageAX = 0;
+  averageAY = 0;
   for (int i = 0; i < n.size(); i++) {
     Node ni = n.get(i);
     averageX += ni.x;
     averageY += ni.y;
+    averageVX += ni.vx;
+    averageVY += ni.vy;
+    averageAX += ni.ax;
+    averageAY += ni.ay;
   }
   averageX = averageX/n.size();
   averageY = averageY/n.size();
@@ -1136,6 +1156,26 @@ void startASAP() {
   stepbystep = false;
   stepbystepslow = false;
 }
+
+void fullSimulation() {
+  xtraj = new float[900];
+  ytraj = new float[900];
+  xvtraj = new float[900];
+  yvtraj = new float[900];
+  xatraj = new float[900];
+  yatraj = new float[900];
+  for(int i = 0; i < 900; i++)
+  {
+    simulate();
+    xtraj[i] = averageX;
+    ytraj[i] = averageY;
+    xvtraj[i] = averageVX;
+    yvtraj[i] = averageVY;
+    xatraj[i] = averageAX;
+    yatraj[i] = averageAY;
+  }
+}
+
 void mouseReleased() {
   drag = false;
   miniSimulation = false;
@@ -1174,25 +1214,19 @@ void mouseReleased() {
     setMenu(8);
   } else if((menu == 5 || menu == 4) && mY >= windowHeight-40){
     if(mX < 90){
-      for (int s = timer; s < 900; s++) {
-        simulate();
-      }
+      fullSimulation();
       timer = 1021;
     }else if(mX >= 120 && mX < 360){
       speed *= 2;
       if(speed == 1024) speed = 900;
       if(speed >= 1800) speed = 1;
     }else if(mX >= windowWidth-120){
-      for (int s = timer; s < 900; s++) {
-        simulate();
-      }
+      fullSimulation();
       timer = 0;
       creaturesTested++;
       for (int i = creaturesTested; i < 1000; i++) {
         setGlobalVariables(c[i]);
-        for (int s = 0; s < 900; s++) {
-          simulate();
-        }
+        fullSimulation();
         setAverages();
         setFitness(i);
       }
@@ -1654,9 +1688,7 @@ void draw() {
     if (!stepbystepslow) {
       for (int i = 0; i < 1000; i++) {
         setGlobalVariables(c[i]);
-        for (int s = 0; s < 900; s++) {
-          simulate();
-        }
+        fullSimulation();
         setAverages();
         setFitness(i);
       }
@@ -2028,7 +2060,20 @@ void setGlobalVariables(Creature thisCreature) {
   totalNodeNausea = 0;
   averageNodeNausea = 0;
 }
-void setFitness(int i){
-  c[i].d = (sq(0.2*averageX) - 0.2*averageX*(-sqrt(averageNodeNausea*.2)*n.size()/10 + averageNodeNausea*.2/900*m.size()))*averageX*0.2/(0.2 + sq(averageX*0.2)); // Multiply by 0.2 because a meter is 5 units for some weird reason.
+void setFitness(int j){
+  float averageAX = 0;
+  float averageAY = 0;
+  for(int i = 0; i < 900; i++) {
+    averageAX += xatraj[i];
+    averageAY += yatraj[i];
+  }
+  averageAX = averageAX/900.0;
+  averageAY = averageAY/900.0;
+  float devScore = 0;
+  for(int i = 0; i < 900; i++)
+    devScore += sqrt(sq(xatraj[i]-averageAX) + sq(yatraj[i]-averageAY));
+   devScore = devScore/900.0;
+    
+  c[j].d = averageX/75.0 - 14.0*devScore;// Multiply by 0.2 because a meter is 5 units for some weird reason.
 }
 
