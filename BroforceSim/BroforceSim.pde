@@ -1,4 +1,5 @@
 import java.util.Map;
+import java.util.ArrayList;
 
 import processing.core.PApplet;
 
@@ -31,6 +32,36 @@ void setupFonts()
   textFont( getFont( "R12") );
 }
 
+/**
+ ===================================================================================================
+ SHAPES
+ ===================================================================================================
+*/
+
+class Rectangle
+{
+  float _x;
+  float _y;
+  int _w;
+  int _h;
+  color _c;
+
+  Rectangle( float x, float y, int w, int h, int c )
+  {
+    _x = x;
+    _y = y;
+    _w = w;
+    _h = h;
+    _c = color( c );
+  }
+
+  void draw()
+  {
+    fill( _c );
+    stroke( _c );
+    rect( _x, _y, _w, _h );
+  }
+}
 
 
 /**
@@ -62,17 +93,28 @@ class Menu implements ControlListener
   String    _name; // Name of the Menu
   ControlP5 _cp5;  // ControlP5 Instance
   PApplet   _app;
-  Runnable  _drawer;
+  Runnable  _drawer = null;
   HashMap< String, EventAction > _buttons = new HashMap< String, EventAction >();
+  ArrayList< Rectangle > _boxes = new ArrayList< Rectangle >();
 
-  Menu(String name, PApplet app, Runnable drawer)
+  void setup( String name, PApplet app )
   {
     _name = name;
     _cp5 = new ControlP5( app );
     _app = app;
-    _drawer = drawer;
 
-    _cp5.addListener(this);
+    _cp5.addListener( this );
+  }
+
+  Menu( String name, PApplet app )
+  {
+    setup( name, app );
+  }
+
+  Menu( String name, PApplet app, Runnable drawer )
+  {
+    setup( name, app );
+    _drawer = drawer;
   }
 
   int _labelIndex = 0;
@@ -114,6 +156,12 @@ class Menu implements ControlListener
       } );
   }
 
+  void createBox( float x, float y, int w, int h )
+  {
+    _boxes.add( new Rectangle( x + 2, y + 2, w, h, 20 ) );
+    _boxes.add( new Rectangle( x, y, w, h, 240 ) );
+  }
+
   // Listener function
   void controlEvent(ControlEvent event)
   {
@@ -137,7 +185,14 @@ class Menu implements ControlListener
   {
     String title = "BroforceSim 2.0 - " + _name;
     surface.setTitle( title );
-    _drawer.run();
+
+    for ( Rectangle rect : _boxes )
+    {
+      rect.draw();
+    }
+
+    if ( _drawer != null )
+      _drawer.run();
   }
 }
 
@@ -169,30 +224,17 @@ void setup()
 
   Menu title, main;
 
-  title = new Menu( "Title", this, new Runnable() {
-      public void run() {
-        fill( 20 );
-        stroke( 20 );
-        rect( 222, 142, 200, 100 );
-
-        fill( 240 );
-        stroke( 240 );
-        rect( 220, 140, 200, 100 );
-      }
-    } );
-
-  main = new Menu( "Main Menu", this, new Runnable() {
-      public void run() {
-      }
-    } );
-
+  title = new Menu( "Title", this );
   title.createLabel( "BroforceSim 2.0", 230, 150, "R24" );
   title.createNavigationButton( "Let's go!", 270, 200, 100, 25, main, "R16" );
+  title.addBox( 220, 140, 200, 100 );
 
+  main = new Menu( "Main Menu", this );
   main.createNavigationButton( "Go back", 270, 180, 100, 25, title, "R16" );
   main.hide();
 
   setMenu( title );
+
   println( "Initialization Complete" );
 }
 
