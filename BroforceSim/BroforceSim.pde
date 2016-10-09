@@ -124,7 +124,7 @@ class Menu implements ControlListener
   DrawAction _drawer = null;
   HashMap< String, EventAction > _buttonActions = new HashMap< String, EventAction >();
   ArrayList< Rectangle > _boxes = new ArrayList< Rectangle >();
-  ArrayList< GPlot > _plots = new ArrayList< GPlot >();
+  HashMap< String, GPlot > _plots = new HashMap< String, GPlot >();
 
   void setup( String name, PApplet app )
   {
@@ -191,12 +191,14 @@ class Menu implements ControlListener
       } );
   }
 
-  GPlot createChart( String label, Rectangle dim )
+  GPlot createLineChart( String label, Rectangle dim, String... layers )
   {
+    // Dumb magic number adjustment.
     dim._x -= 40;
     dim._y -= 10;
     dim._w -= 40;
     dim._h -= 30;
+
     GPlot plot = new GPlot( _app );
     plot.setTitleText( label );
     plot.setPos( dim._x, dim._y );
@@ -204,8 +206,65 @@ class Menu implements ControlListener
 
     plot.activatePointLabels();
 
-    _plots.add( plot );
+    int plotColor = 40;
+    for ( String layer : layers )
+    {
+      plot.addLayer( layer, new GPointsArray(0) );
+      plot.getLayer( layer ).setLineColor( color( plotColor ) );
+      plotColor += 20;
+    }
+
+    _plots.put( label, plot );
     return plot;
+  }
+
+  GPlot createHistogram( String label, Rectangle dim )
+  {
+    // Dumb magic number adjustment.
+    dim._x -= 40;
+    dim._y -= 10;
+    dim._w -= 40;
+    dim._h -= 30;
+
+    GPlot plot = new GPlot( _app );
+    plot.setTitleText( label );
+    plot.setPos( dim._x, dim._y );
+    plot.setDim( dim._w, dim._h );
+
+    plot.activatePointLabels();
+
+    plot.startHistograms( GPlot.HORIZONTAL );
+    plot.getHistogram().setDrawLabels( true );
+    plot.getHistogram().setRotateLabels( true );
+    plot.getHistogram().setBgColors( new color[] { color( 20, 50 ) } );
+
+    _plots.put( label, plot );
+    return plot;
+  }
+
+  void addPointToLineChart( String label, String line, float x, float y )
+  {
+    GPlot plot = _plots.get( label );
+    GLayer layer = plot.getLayer( line );
+
+    layer.addPoint( x, y );
+  }
+
+  void setHistogramData( String label, HashMap< String, Float > points )
+  {
+    GPointsArray data = new GPointsArray( points.size() );
+
+    int i = 0;
+    for ( String type : points.keySet() )
+    {
+      float count = points.get( type );
+      float pos = i + 0.5 - points.size() / 2.0;
+      data.add( count, pos, type );
+      i++;
+    }
+
+    GPlot plot = _plots.get( label );
+    plot.setPoints( data );
   }
 
   void createBox( int x, int y, int w, int h )
@@ -238,23 +297,29 @@ class Menu implements ControlListener
     String title = "BroforceSim 2.0 - " + _name;
     surface.setTitle( title );
 
+    // Draw boxes.
     for ( Rectangle rect : _boxes )
     {
       rect.draw();
     }
 
-    for ( GPlot plot : _plots )
+    // Draw plots.
+    for ( GPlot plot : _plots.values() )
     {
       plot.updateLimits();
       plot.beginDraw();
       plot.drawBox();
+      plot.drawGridLines(GPlot.BOTH);
       plot.drawTitle();
       plot.drawXAxis();
-      plot.drawYAxis();
+
+      if (plot.getHistogram() == null)
+        plot.drawYAxis();
+
       plot.drawTopAxis();
       plot.drawRightAxis();
       plot.drawLines();
-      plot.drawGridLines(GPlot.BOTH);
+      plot.drawHistograms();
       plot.endDraw();
     }
 
@@ -289,10 +354,8 @@ void setup()
 
   setupFonts();
 
-  Menu title, main;
-
-  title = new Menu( "Title", this );
-  main = new Menu( "Main Menu", this );
+  Menu title = new Menu( "Title", this );
+  Menu main = new Menu( "Main Menu", this );
 
   title.createLabel( "BroforceSim 2.0", 230, 150, "R24" );
   title.createNavigationButton( "Let's go!",
@@ -301,25 +364,17 @@ void setup()
 
   title.createBox( 220, 140, 200, 100 );
 
-  final GPlot fitness = main.createChart( "Fitness",
-                                          new Rectangle( 0, 0, 420, 400 ) );
-
-  final GPlot population = main.createChart( "Population", new Rectangle( 420, 0, 200, 400 ) );
+  main.createLineChart( "Fitness", new Rectangle( 10, 0, 430, 400 ), "Max", "Min", "Median" );
+  main.createHistogram( "Population", new Rectangle( 420, 0, 200, 400 ) );
 
   main.createNavigationButton( "Go back",
-                               new Rectangle( 10, 440, 100, 25 ),
+                               new Rectangle( 520, 440, 100, 25 ),
                                title, "R16" );
 
   main.setDrawer( new DrawAction() {
-      int step = 0;
       public void draw() {
-        if (frameCount % 30 == 0)
-        {
-          fitness.addPoint( new GPoint(step++, 10 * sin(float(frameCount/ 10))) );
-        }
       }
     } );
-
   main.hide();
 
   setMenu( title );
