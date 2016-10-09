@@ -1538,9 +1538,11 @@ void setup() {
   font = loadFont("Helvetica-Bold-96.vlw");
   textFont(font, 96);
   textAlign(CENTER);
-   
-  /*rects.add(new Rectangle(4,-7,9,-3));
-   rects.add(new Rectangle(6,-1,10,10));
+ for(int j = 0; j<100;j++){  
+   rects.add(new Rectangle(2*j+6,-.5-.5*sin(3.14*j/4),2*j+8,10));
+ }
+  /*rects.add(new Rectangle(6,-1,10,10));
+   /*rects.add(new Rectangle(6,-1,10,10));
    rects.add(new Rectangle(9.5,-1.5,13,10));
    rects.add(new Rectangle(12,-2,16,10));
    rects.add(new Rectangle(15,-2.5,19,10));
@@ -1551,7 +1553,7 @@ void setup() {
    rects.add(new Rectangle(30,-5,34,10));
    rects.add(new Rectangle(33,-5.5,37,10));
    rects.add(new Rectangle(36,-6,40,10));
-   rects.add(new Rectangle(39,-6.5,100,10));*/
+   rects.add(new Rectangle(39,-6.5,100,10));
     
   //rects.add(new Rectangle(-100,-100,100,-2.8));
   //rects.add(new Rectangle(-100,0,100,100));
