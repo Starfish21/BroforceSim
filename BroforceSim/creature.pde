@@ -1,6 +1,8 @@
 interface Creature
 {
   PGraphics draw();
+  String getGene();
+  String getSpecies();
 }
 
 interface CreatureFactory
@@ -28,16 +30,41 @@ class BasicCreature implements Creature
     data[ i ][ j ] = val;
   }
 
+  String getGene()
+  {
+    String gene = "";
+    for ( int i = 0; i < 10; i++ )
+      for ( int j = 0; j < 10; j++ )
+      {
+        if ( get( i, j ) )
+          gene += "1";
+        else
+          gene += "0";
+      }
+
+    return gene;
+  }
+
+  String getSpecies()
+  {
+    int sum = 0;
+    for ( int i = 0; i < 10; i++ )
+      for ( int j = 0; j < 10; j++ )
+        sum += ( get( i, j ) ) ? 1 : -1;
+
+    return str( sum );
+  }
+
   PGraphics draw()
   {
-    PGraphics g = createGraphics( 10, 10 );
-    g.beginDraw();
+    PGraphics p = createGraphics( 10, 10 );
+    p.beginDraw();
     for ( int i = 0; i < 10; i++ )
       for ( int j = 0; j < 10; j++ )
         if ( data[ i ][ j ] )
-          g.point( i, j );
-    g.endDraw();
-    return g;
+          p.point( i, j );
+    p.endDraw();
+    return p;
   }
 }
 
@@ -59,7 +86,7 @@ class BasicCreatureFactory implements CreatureFactory
 class Population
 {
   int _size;
-  ArrayList< Creature > _creatures;
+  List< Creature > _creatures;
   CreatureFactory _factory;
 
   Population( int size, CreatureFactory factory )
@@ -69,7 +96,7 @@ class Population
     _factory = factory;
 
     for ( int i = 0; i < size; i++ )
-      _creatures.set( i, factory.create() );
+      _creatures.add( i, factory.create() );
   }
 
   Creature get( int i )
@@ -89,16 +116,32 @@ class Population
       _creatures.add( _factory.create() );
     }
   }
+
+  void sort( final HashMap< String, Double > fitnesses )
+  {
+    Collections.sort( _creatures, new Comparator< Creature >() {
+        @Override
+        public int compare( Creature a, Creature b )
+        {
+          return fitnesses.get( a.getGene() ).compareTo( fitnesses.get( b.getGene() ) );
+        }
+      } );
+  }
 }
 
 interface Algorithm
 {
-  double getParameter( String parameter );
-
+  void calcFitness();
+  void nextGeneration();
   // Elitism
   // Dropout
   // Mutation
   // Crossover
+
+
+  Creature getBest();
+  Creature getWorst();
+  Creature getMedian();
 }
 
 interface Fitness
@@ -106,3 +149,84 @@ interface Fitness
   double getFitness( Creature creature );
 }
 
+class BasicCreatureFitness implements Fitness
+{
+  double getFitness( Creature creature )
+  {
+    double score = 0;
+
+    BasicCreature c = ( BasicCreature ) creature;
+
+    for ( int i = 0; i < 10; i++ )
+      for ( int j = 0; j < 10; j++ )
+      {
+        if ( i == j && c.get( i, j ) )
+          score += 1;
+        else if ( i != j && !c.get( i, j ) )
+          score += 1;
+        else
+          score -= 1;
+      }
+
+    return score;
+  }
+}
+
+class BasicCreatureAlgorithm implements Algorithm
+{
+  Population pop = new Population( 100, new BasicCreatureFactory() );
+  BasicCreatureFitness calc = new BasicCreatureFitness();
+  HashMap< String, Double > fitness = new HashMap< String, Double >();
+
+  void calcFitness()
+  {
+    for ( int i = 0; i < 100; i++ )
+    {
+      fitness.put( pop.get( i ).getGene(), calc.getFitness( pop.get( i ) ) );
+    }
+    pop.sort( fitness );
+  }
+
+  void nextGeneration()
+  {
+    for ( int i = 0; i < 50; i++ )
+      pop.remove( i );
+
+    pop.fill();
+  }
+
+  float getFitness( Creature creature )
+  {
+    return fitness.get( creature.getGene() ).floatValue();
+  }
+
+  Map< String, Float > getSpecies()
+  {
+    Map< String, Float > map = new TreeMap< String, Float >();
+    for ( int i = 0; i < 100; i++ )
+    {
+      Creature c = pop.get( i );
+      if ( !map.containsKey( c.getSpecies() ) )
+        map.put( c.getSpecies(), 1. );
+      else
+        map.put( c.getSpecies(), map.get( c.getSpecies() ) + 1 );
+    }
+
+    return map;
+  }
+
+  Creature getBest()
+  {
+    return pop.get( 99 );
+  }
+
+  Creature getWorst()
+  {
+    return pop.get( 0 );
+  }
+
+  Creature getMedian()
+  {
+    return pop.get( 50 );
+  }
+}

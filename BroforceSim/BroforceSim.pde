@@ -1,10 +1,17 @@
-import java.util.Map;
-import java.util.ArrayList;
+import java.util.*;
 
 import processing.core.PApplet;
 
 import grafica.*;
 import controlP5.*;
+
+class Holder< T > {
+  T _value;
+  Holder( T value )
+  {
+    _value = value;
+  }
+}
 
 void createTitle()
 {
@@ -25,7 +32,7 @@ void createMainMenu()
 {
   Menu main = new Menu( "Main", this );
 
-  main.createLineChart( "Fitness", new Rectangle( 10, 10, 430, 300 ), "Max", "Min", "Median" );
+  main.createLineChart( "Fitness", new Rectangle( 10, 10, 410, 300 ), "Max", "Min", "Median" );
   main.createHistogram( "Population", new Rectangle( 420, 10, 200, 300 ) );
 
   main.createButton( "Save Image", new Rectangle( 410, 440, 100, 25 ), "R16",
@@ -35,14 +42,14 @@ void createMainMenu()
                        }
                      } );
 
+  final Holder< Boolean > run = new Holder< Boolean >( false );
   main.createButton( "Run Sim.", new Rectangle( 20, 440, 100, 25 ), "R16",
                      new EventAction() {
-                       boolean run = false;
                        public void run() {
-                         run = ( run ) ? false : true;
+                         run._value = ( run._value ) ? false : true;
                          Label label = _event.getController().getCaptionLabel();
 
-                         if ( run )
+                         if ( run._value.booleanValue() )
                            label.setText( "Stop Sim." );
                          else
                            label.setText( "Run Sim." );
@@ -61,11 +68,25 @@ void createMainMenu()
   main.createLabel( "Best", 305, 350, "R12" );
 
   main.setDrawer( new DrawAction() {
-      BasicCreature creature = new BasicCreature();
+      BasicCreatureAlgorithm alg = new BasicCreatureAlgorithm();
+      int step = 0;
 
       public void draw() {
-        PGraphics p = creature.draw();
-        // _menu.drawPGraphics( p, 0, 0, 100, 100 );
+        _menu.drawPGraphics( alg.getWorst().draw(), 75, 350, 70, 70 );
+        _menu.drawPGraphics( alg.getMedian().draw(), 215, 350, 70, 70 );
+        _menu.drawPGraphics( alg.getBest().draw(), 355, 350, 70, 70 );
+
+        if ( run._value )
+        {
+          alg.calcFitness();
+          _menu.addPointToLineChart( "Fitness", "Max", step, alg.getFitness( alg.getBest() ) );
+          _menu.addPointToLineChart( "Fitness", "Min", step, alg.getFitness( alg.getWorst() ) );
+          _menu.addPointToLineChart( "Fitness", "Median", step, alg.getFitness( alg.getMedian() ) );
+          _menu.setHistogramData( "Population", alg.getSpecies() );
+          step++;
+
+          alg.nextGeneration();
+        }
       }
     } );
 

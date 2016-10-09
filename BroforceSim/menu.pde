@@ -43,9 +43,9 @@ class Menu implements ControlListener
   ControlP5 _cp5;  // ControlP5 Instance
   PApplet   _app;
   DrawAction _drawer;
-  HashMap< String, EventAction > _buttonActions = new HashMap< String, EventAction >();
+  Map< String, EventAction > _buttonActions = new HashMap< String, EventAction >();
   ArrayList< Rectangle > _boxes = new ArrayList< Rectangle >();
-  HashMap< String, GPlot > _plots = new HashMap< String, GPlot >();
+  Map< String, GPlot > _plots = new HashMap< String, GPlot >();
 
   Menu( String name, PApplet app )
   {
@@ -158,8 +158,8 @@ class Menu implements ControlListener
 
     plot.startHistograms( GPlot.HORIZONTAL );
     plot.getHistogram().setDrawLabels( true );
-    plot.getHistogram().setRotateLabels( true );
-    plot.getHistogram().setBgColors( new color[] { color( 20, 50 ) } );
+    plot.getHistogram().setBgColors( new color[] { color( 50, 50 ) } );
+    plot.getHistogram().setLineColors( new color[] { color( 20 ) } );
 
     _plots.put( label, plot );
     return plot;
@@ -173,7 +173,7 @@ class Menu implements ControlListener
     layer.addPoint( x, y );
   }
 
-  void setHistogramData( String label, HashMap< String, Float > points )
+  void setHistogramData( String label, Map< String, Float > points )
   {
     GPointsArray data = new GPointsArray( points.size() );
 
@@ -217,8 +217,9 @@ class Menu implements ControlListener
   public void drawPGraphics( PGraphics p, int x, int y, int w, int h )
   {
     pushMatrix();
+    translate( x, y );
     scale( w / float( p.width ), h / float( p.height) );
-    image( p, x, y );
+    image( p, 0, 0 );
     popMatrix();
   }
 
@@ -253,10 +254,10 @@ class Menu implements ControlListener
       plot.endDraw();
     }
 
+    _cp5.draw();
+
     if ( _drawer != null )
       _drawer.draw();
-
-    _cp5.draw();
   }
 }
 
