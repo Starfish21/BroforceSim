@@ -1,12 +1,15 @@
 class EventAction implements Runnable
 {
+  Menu _menu;
   ControlEvent _event;
+
   EventAction()
   {
   }
 
-  void setEvent( ControlEvent event )
+  void set( Menu menu, ControlEvent event )
   {
+    _menu = menu;
     _event = event;
   }
 
@@ -81,7 +84,7 @@ class Menu implements ControlListener
   }
 
   int _buttonIndex = 0;
-  void createNavigationButton( String text, Rectangle dim, final String menu, String font )
+  void createButton( String text, Rectangle dim, String font, EventAction action )
   {
     String label = "button" + str( _buttonIndex++ );
     _cp5.addButton( label )
@@ -98,14 +101,21 @@ class Menu implements ControlListener
       .setColor( 230 )
       .setFont( getFont( font ) );
 
-    final Menu that = this;
     // Set action when pressed
-    _buttonActions.put( text, new EventAction() {
+    _buttonActions.put( label, action );
+  }
+
+  void createNavigationButton( String text, Rectangle dim, final String menu, String font )
+  {
+    final Menu that = this;
+    EventAction action = new EventAction() {
         public void run() {
           that.hide();
           setMenu( menu );
         }
-      } );
+      };
+
+    createButton( text, dim, font, action );
   }
 
   GPlot createLineChart( String label, Rectangle dim, String... layers )
@@ -193,8 +203,8 @@ class Menu implements ControlListener
   // Listener function
   void controlEvent(ControlEvent event)
   {
-    EventAction action = _buttonActions.get( event.getLabel() );
-    action.setEvent( event );
+    EventAction action = _buttonActions.get( event.getName() );
+    action.set( this, event );
     action.run();
   }
 

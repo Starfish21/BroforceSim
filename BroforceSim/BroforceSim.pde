@@ -25,19 +25,51 @@ void createMainMenu()
 {
   Menu main = new Menu( "Main", this );
 
-  main.createLineChart( "Fitness", new Rectangle( 10, 0, 430, 400 ), "Max", "Min", "Median" );
-  main.createHistogram( "Population", new Rectangle( 420, 0, 200, 400 ) );
+  main.createLineChart( "Fitness", new Rectangle( 10, 0, 430, 300 ), "Max", "Min", "Median" );
+  main.createHistogram( "Population", new Rectangle( 420, 0, 200, 300 ) );
 
-  main.createNavigationButton( "Go back",
-                               new Rectangle( 520, 440, 100, 25 ),
-                               "Title", "R16" );
+  main.createButton( "Save Image", new Rectangle( 410, 440, 100, 25 ), "R16",
+                     new EventAction() {
+                       public void run() {
+                         saveFrame();
+                       }
+                     } );
+
+  main.createButton( "Run Sim.", new Rectangle( 20, 440, 100, 25 ), "R16",
+                     new EventAction() {
+                       boolean run = false;
+                       public void run() {
+                         run = ( run ) ? false : true;
+                         Label label = _event.getController().getCaptionLabel();
+
+                         if ( run )
+                           label.setText( "Stop Sim." );
+                         else
+                           label.setText( "Run Sim." );
+                       }
+                     } );
+
+  main.createNavigationButton( "View Pop.", new Rectangle( 130, 440, 100, 25 ), "Population", "R16" );
+  main.createNavigationButton( "Go back", new Rectangle( 520, 440, 100, 25 ), "Title", "R16" );
 
   main.setDrawer( new DrawAction() {
       public void draw() {
+        PGraphics p = createGraphics(100, 100);
+        Creature creature = new Creature();
+        creature.draw( p );
+        image(p, 0, 0);
       }
     } );
 
   addMenu( "Main", main );
+}
+
+void createPopulationView()
+{
+  Menu population = new Menu( "Population", this );
+  population.createNavigationButton( "Go back", new Rectangle( 520, 440, 100, 25 ), "Main", "R16" );
+
+  addMenu( "Population", population );
 }
 
 
@@ -54,6 +86,7 @@ void setup()
 
   createTitle();
   createMainMenu();
+  createPopulationView();
 }
 
 // Main loop.
