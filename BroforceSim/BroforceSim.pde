@@ -25,8 +25,8 @@ void createMainMenu()
 {
   Menu main = new Menu( "Main", this );
 
-  main.createLineChart( "Fitness", new Rectangle( 10, 0, 430, 300 ), "Max", "Min", "Median" );
-  main.createHistogram( "Population", new Rectangle( 420, 0, 200, 300 ) );
+  main.createLineChart( "Fitness", new Rectangle( 10, 10, 430, 300 ), "Max", "Min", "Median" );
+  main.createHistogram( "Population", new Rectangle( 420, 10, 200, 300 ) );
 
   main.createButton( "Save Image", new Rectangle( 410, 440, 100, 25 ), "R16",
                      new EventAction() {
@@ -52,12 +52,20 @@ void createMainMenu()
   main.createNavigationButton( "View Pop.", new Rectangle( 130, 440, 100, 25 ), "Population", "R16" );
   main.createNavigationButton( "Go back", new Rectangle( 520, 440, 100, 25 ), "Title", "R16" );
 
+  main.createBox( 20, 345, 130, 80 );
+  main.createBox( 160, 345, 130, 80 );
+  main.createBox( 300, 345, 130, 80 );
+
+  main.createLabel( "Worst", 25, 350, "R12" );
+  main.createLabel( "Median", 165, 350, "R12" );
+  main.createLabel( "Best", 305, 350, "R12" );
+
   main.setDrawer( new DrawAction() {
+      BasicCreature creature = new BasicCreature();
+
       public void draw() {
-        PGraphics p = createGraphics(100, 100);
-        Creature creature = new Creature();
-        creature.draw( p );
-        image(p, 0, 0);
+        PGraphics p = creature.draw();
+        // _menu.drawPGraphics( p, 0, 0, 100, 100 );
       }
     } );
 

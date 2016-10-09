@@ -42,29 +42,27 @@ class Menu implements ControlListener
   String    _name; // Name of the Menu
   ControlP5 _cp5;  // ControlP5 Instance
   PApplet   _app;
-  DrawAction _drawer = null;
+  DrawAction _drawer;
   HashMap< String, EventAction > _buttonActions = new HashMap< String, EventAction >();
   ArrayList< Rectangle > _boxes = new ArrayList< Rectangle >();
   HashMap< String, GPlot > _plots = new HashMap< String, GPlot >();
 
-  void setup( String name, PApplet app )
+  Menu( String name, PApplet app )
+  {
+    this( name, app, null );
+  }
+
+  Menu( String name, PApplet app, DrawAction drawer )
   {
     _name = name;
     _cp5 = new ControlP5( app );
     _app = app;
 
     _cp5.addListener( this );
-  }
+    _cp5.setAutoDraw( false );
 
-  Menu( String name, PApplet app )
-  {
-    setup( name, app );
-  }
-
-  Menu( String name, PApplet app, DrawAction drawer )
-  {
-    setup( name, app );
-    setDrawer( drawer );
+    if ( drawer != null )
+      setDrawer( drawer );
   }
 
   void setDrawer( DrawAction drawer )
@@ -89,9 +87,9 @@ class Menu implements ControlListener
     String label = "button" + str( _buttonIndex++ );
     _cp5.addButton( label )
       .setLabel( text )
-      .setPosition( dim._x, dim._y )
-      .setSize( dim._w, dim._h )
-      .setColorBackground( color( 20 ) )
+      .setPosition( dim.getXUpper(), dim.getYUpper() )
+      .setSize( int( dim.getWidth() ), int( dim.getHeight() ) )
+      .setColorBackground( color( 50 ) )
       .setColorActive( color( 30 ) );
 
     // Set label properties
@@ -118,20 +116,29 @@ class Menu implements ControlListener
     createButton( text, dim, font, action );
   }
 
-  GPlot createLineChart( String label, Rectangle dim, String... layers )
+  GPlot createBasicChart( String label, Rectangle dim )
   {
     // Dumb magic number adjustment.
-    dim._x -= 40;
-    dim._y -= 10;
-    dim._w -= 40;
-    dim._h -= 30;
+    int x = int( dim.getXUpper() ) - 40;
+    int y = int( dim.getYUpper() ) - 10;
+    int w = int( dim.getWidth() ) - 40;
+    int h = int( dim.getHeight() ) - 30;
 
     GPlot plot = new GPlot( _app );
     plot.setTitleText( label );
-    plot.setPos( dim._x, dim._y );
-    plot.setDim( dim._w, dim._h );
+    plot.setPos( x, y );
+    plot.setDim( w, h );
 
     plot.activatePointLabels();
+
+    createLabel( label, x + 65, y + 15, "R12" );
+
+    return plot;
+  }
+
+  GPlot createLineChart( String label, Rectangle dim, String... layers )
+  {
+    GPlot plot = createBasicChart( label, dim );
 
     int plotColor = 40;
     for ( String layer : layers )
@@ -147,18 +154,7 @@ class Menu implements ControlListener
 
   GPlot createHistogram( String label, Rectangle dim )
   {
-    // Dumb magic number adjustment.
-    dim._x -= 40;
-    dim._y -= 10;
-    dim._w -= 40;
-    dim._h -= 30;
-
-    GPlot plot = new GPlot( _app );
-    plot.setTitleText( label );
-    plot.setPos( dim._x, dim._y );
-    plot.setDim( dim._w, dim._h );
-
-    plot.activatePointLabels();
+    GPlot plot = createBasicChart( label, dim );
 
     plot.startHistograms( GPlot.HORIZONTAL );
     plot.getHistogram().setDrawLabels( true );
@@ -218,16 +214,25 @@ class Menu implements ControlListener
     _cp5.hide();
   }
 
+  public void drawPGraphics( PGraphics p, int x, int y, int w, int h )
+  {
+    pushMatrix();
+    scale( w / float( p.width ), h / float( p.height) );
+    image( p, x, y );
+    popMatrix();
+  }
+
   public void draw()
   {
     String title = "BroforceSim 2.0 - " + _name;
     surface.setTitle( title );
 
     // Draw boxes.
+    PGraphics p = createGraphics( 640, 480 );
     for ( Rectangle rect : _boxes )
-    {
-      rect.draw();
-    }
+      rect.draw( p );
+
+    image( p, 0, 0 );
 
     // Draw plots.
     for ( GPlot plot : _plots.values() )
@@ -236,7 +241,6 @@ class Menu implements ControlListener
       plot.beginDraw();
       plot.drawBox();
       plot.drawGridLines(GPlot.BOTH);
-      plot.drawTitle();
       plot.drawXAxis();
 
       if (plot.getHistogram() == null)
@@ -251,6 +255,8 @@ class Menu implements ControlListener
 
     if ( _drawer != null )
       _drawer.draw();
+
+    _cp5.draw();
   }
 }
 
