@@ -3,6 +3,7 @@ import java.util.ArrayList;
 
 import processing.core.PApplet;
 
+import grafica.*;
 import controlP5.*;
 
 /**
@@ -40,13 +41,22 @@ void setupFonts()
 
 class Rectangle
 {
-  float _x;
-  float _y;
+  int _x;
+  int _y;
   int _w;
   int _h;
   color _c;
 
-  Rectangle( float x, float y, int w, int h, int c )
+  Rectangle( int x, int y, int w, int h )
+  {
+    _x = x;
+    _y = y;
+    _w = w;
+    _h = h;
+    _c = color( 255 );
+  }
+
+  Rectangle( int x, int y, int w, int h, int c )
   {
     _x = x;
     _y = y;
@@ -87,15 +97,34 @@ class EventAction implements Runnable
   };
 }
 
+class DrawAction
+{
+  Menu _menu;
+
+  DrawAction()
+  {
+  }
+
+  void setMenu( Menu menu )
+  {
+    _menu = menu;
+  }
+
+  void draw()
+  {
+  }
+}
+
 // Interface Menu class. Defines how it is drawn and what menus follow it.
 class Menu implements ControlListener
 {
   String    _name; // Name of the Menu
   ControlP5 _cp5;  // ControlP5 Instance
   PApplet   _app;
-  Runnable  _drawer = null;
-  HashMap< String, EventAction > _buttons = new HashMap< String, EventAction >();
+  DrawAction _drawer = null;
+  HashMap< String, EventAction > _buttonActions = new HashMap< String, EventAction >();
   ArrayList< Rectangle > _boxes = new ArrayList< Rectangle >();
+  ArrayList< GPlot > _plots = new ArrayList< GPlot >();
 
   void setup( String name, PApplet app )
   {
@@ -111,10 +140,16 @@ class Menu implements ControlListener
     setup( name, app );
   }
 
-  Menu( String name, PApplet app, Runnable drawer )
+  Menu( String name, PApplet app, DrawAction drawer )
   {
     setup( name, app );
+    setDrawer( drawer );
+  }
+
+  void setDrawer( DrawAction drawer )
+  {
     _drawer = drawer;
+    _drawer.setMenu( this );
   }
 
   int _labelIndex = 0;
@@ -128,13 +163,13 @@ class Menu implements ControlListener
   }
 
   int _buttonIndex = 0;
-  void createNavigationButton( String text, float x, float y, int w, int h, final Menu menu, String font )
+  void createNavigationButton( String text, Rectangle dim, final Menu menu, String font )
   {
     String label = "button" + str( _buttonIndex++ );
     _cp5.addButton( label )
       .setLabel( text )
-      .setPosition( x, y )
-      .setSize( w, h )
+      .setPosition( dim._x, dim._y )
+      .setSize( dim._w, dim._h )
       .setColorBackground( color( 20 ) )
       .setColorActive( color( 30 ) );
 
@@ -147,7 +182,7 @@ class Menu implements ControlListener
 
     final Menu that = this;
     // Set action when pressed
-    _buttons.put( text, new EventAction() {
+    _buttonActions.put( text, new EventAction() {
         public void run() {
           println( "Recieved Event from " + _event.getLabel() );
           that.hide();
@@ -156,7 +191,24 @@ class Menu implements ControlListener
       } );
   }
 
-  void createBox( float x, float y, int w, int h )
+  GPlot createChart( String label, Rectangle dim )
+  {
+    dim._x -= 40;
+    dim._y -= 10;
+    dim._w -= 40;
+    dim._h -= 30;
+    GPlot plot = new GPlot( _app );
+    plot.setTitleText( label );
+    plot.setPos( dim._x, dim._y );
+    plot.setDim( dim._w, dim._h );
+
+    plot.activatePointLabels();
+
+    _plots.add( plot );
+    return plot;
+  }
+
+  void createBox( int x, int y, int w, int h )
   {
     _boxes.add( new Rectangle( x + 2, y + 2, w, h, 20 ) );
     _boxes.add( new Rectangle( x, y, w, h, 240 ) );
@@ -165,7 +217,7 @@ class Menu implements ControlListener
   // Listener function
   void controlEvent(ControlEvent event)
   {
-    EventAction action = _buttons.get( event.getLabel() );
+    EventAction action = _buttonActions.get( event.getLabel() );
     action.setEvent( event );
     action.run();
   }
@@ -191,8 +243,23 @@ class Menu implements ControlListener
       rect.draw();
     }
 
+    for ( GPlot plot : _plots )
+    {
+      plot.updateLimits();
+      plot.beginDraw();
+      plot.drawBox();
+      plot.drawTitle();
+      plot.drawXAxis();
+      plot.drawYAxis();
+      plot.drawTopAxis();
+      plot.drawRightAxis();
+      plot.drawLines();
+      plot.drawGridLines(GPlot.BOTH);
+      plot.endDraw();
+    }
+
     if ( _drawer != null )
-      _drawer.run();
+      _drawer.draw();
   }
 }
 
@@ -225,12 +292,34 @@ void setup()
   Menu title, main;
 
   title = new Menu( "Title", this );
-  title.createLabel( "BroforceSim 2.0", 230, 150, "R24" );
-  title.createNavigationButton( "Let's go!", 270, 200, 100, 25, main, "R16" );
-  title.addBox( 220, 140, 200, 100 );
-
   main = new Menu( "Main Menu", this );
-  main.createNavigationButton( "Go back", 270, 180, 100, 25, title, "R16" );
+
+  title.createLabel( "BroforceSim 2.0", 230, 150, "R24" );
+  title.createNavigationButton( "Let's go!",
+                                new Rectangle( 270, 200, 100, 25 ),
+                                main, "R16" );
+
+  title.createBox( 220, 140, 200, 100 );
+
+  final GPlot fitness = main.createChart( "Fitness",
+                                          new Rectangle( 0, 0, 420, 400 ) );
+
+  final GPlot population = main.createChart( "Population", new Rectangle( 420, 0, 200, 400 ) );
+
+  main.createNavigationButton( "Go back",
+                               new Rectangle( 10, 440, 100, 25 ),
+                               title, "R16" );
+
+  main.setDrawer( new DrawAction() {
+      int step = 0;
+      public void draw() {
+        if (frameCount % 30 == 0)
+        {
+          fitness.addPoint( new GPoint(step++, 10 * sin(float(frameCount/ 10))) );
+        }
+      }
+    } );
+
   main.hide();
 
   setMenu( title );
