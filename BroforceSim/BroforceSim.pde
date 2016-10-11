@@ -68,17 +68,25 @@ void createMainMenu()
   main.createLabel( "Best", 305, 350, "R12" );
 
   main.setDrawer( new DrawAction() {
-      BasicCreatureAlgorithm alg = new BasicCreatureAlgorithm();
       int step = 0;
 
+      PGraphics worst = createGraphics( 1, 1 );
+      PGraphics median = createGraphics( 1, 1 );
+      PGraphics best = createGraphics( 1, 1 );
+
       public void draw() {
-        _menu.drawPGraphics( alg.getWorst().draw(), 75, 350, 70, 70 );
-        _menu.drawPGraphics( alg.getMedian().draw(), 215, 350, 70, 70 );
-        _menu.drawPGraphics( alg.getBest().draw(), 355, 350, 70, 70 );
+        _menu.drawPGraphics( worst, 75, 350, 70, 70 );
+        _menu.drawPGraphics( median, 215, 350, 70, 70 );
+        _menu.drawPGraphics( best, 355, 350, 70, 70 );
 
         if ( run._value )
         {
           alg.calcFitness();
+
+          worst = alg.getWorst().draw();
+          median = alg.getMedian().draw();
+          best = alg.getBest().draw();
+
           _menu.addPointToLineChart( "Fitness", "Max", step, alg.getFitness( alg.getBest() ) );
           _menu.addPointToLineChart( "Fitness", "Min", step, alg.getFitness( alg.getWorst() ) );
           _menu.addPointToLineChart( "Fitness", "Median", step, alg.getFitness( alg.getMedian() ) );

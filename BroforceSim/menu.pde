@@ -157,6 +157,7 @@ class Menu implements ControlListener
     GPlot plot = createBasicChart( label, dim );
 
     plot.startHistograms( GPlot.HORIZONTAL );
+    plot.setXLim( 0, 1 );
     plot.getHistogram().setDrawLabels( true );
     plot.getHistogram().setBgColors( new color[] { color( 50, 50 ) } );
     plot.getHistogram().setLineColors( new color[] { color( 20 ) } );
@@ -238,17 +239,23 @@ class Menu implements ControlListener
     // Draw plots.
     for ( GPlot plot : _plots.values() )
     {
-      plot.updateLimits();
+      if (plot.getHistogram() == null)
+        plot.updateLimits();
+
       plot.beginDraw();
       plot.drawBox();
-      plot.drawGridLines(GPlot.BOTH);
       plot.drawXAxis();
 
       if (plot.getHistogram() == null)
+      {
         plot.drawYAxis();
+        plot.drawGridLines(GPlot.BOTH);
+        plot.drawRightAxis();
+      }
+      else
+        plot.drawGridLines(GPlot.VERTICAL);
 
       plot.drawTopAxis();
-      plot.drawRightAxis();
       plot.drawLines();
       plot.drawHistograms();
       plot.endDraw();

@@ -1,22 +1,17 @@
-interface Creature
+interface ICreature
 {
-  PGraphics draw();
+  void fromGene( String gene );
   String getGene();
   String getSpecies();
-}
-
-interface CreatureFactory
-{
-  Creature create();
-}
-
-interface Environment
-{
   PGraphics draw();
 }
 
+interface ICreatureFactory
+{
+  ICreature create();
+}
 
-class BasicCreature implements Creature
+class BasicCreature implements ICreature
 {
   boolean[][] data = new boolean[10][10];
 
@@ -28,6 +23,14 @@ class BasicCreature implements Creature
   void set( int i, int j, boolean val )
   {
     data[ i ][ j ] = val;
+  }
+
+  void fromGene( String gene )
+  {
+    int k = 0;
+    for ( int i = 0; i < 10; i++ )
+      for ( int j = 0; j < 10; j++ )
+        set( i, j, boolean( int( gene.charAt( k++ ) ) ) );
   }
 
   String getGene()
@@ -52,7 +55,7 @@ class BasicCreature implements Creature
       for ( int j = 0; j < 10; j++ )
         sum += ( get( i, j ) ) ? 1 : -1;
 
-    return str( sum );
+    return str( sum % 10 );
   }
 
   PGraphics draw()
@@ -68,10 +71,9 @@ class BasicCreature implements Creature
   }
 }
 
-
-class BasicCreatureFactory implements CreatureFactory
+class BasicCreatureFactory implements ICreatureFactory
 {
-  BasicCreature create()
+  ICreature create()
   {
     BasicCreature creature = new BasicCreature();
     for ( int i = 0; i < 10; i++ )
@@ -82,26 +84,35 @@ class BasicCreatureFactory implements CreatureFactory
   }
 }
 
-
 class Population
 {
   int _size;
-  List< Creature > _creatures;
-  CreatureFactory _factory;
+  List< ICreature > _creatures;
+  ICreatureFactory _factory;
 
-  Population( int size, CreatureFactory factory )
+  Population( int size, ICreatureFactory factory )
   {
     _size = size;
-    _creatures = new ArrayList< Creature >( size );
+    _creatures = new ArrayList< ICreature >( size );
     _factory = factory;
 
     for ( int i = 0; i < size; i++ )
       _creatures.add( i, factory.create() );
   }
 
-  Creature get( int i )
+  ICreature get( int i )
   {
     return _creatures.get( i );
+  }
+
+  List< ICreature > getCreatures()
+  {
+    return _creatures;
+  }
+
+  void setCreatures( List< ICreature > creatures )
+  {
+    _creatures = creatures;
   }
 
   void remove( int i )
@@ -109,124 +120,28 @@ class Population
     _creatures.remove( i );
   }
 
-  void fill()
+  int getSize()
   {
-    while ( _creatures.size() < _size )
-    {
-      _creatures.add( _factory.create() );
-    }
+    return _size;
   }
 
-  void sort( final HashMap< String, Double > fitnesses )
+  void fill()
   {
-    Collections.sort( _creatures, new Comparator< Creature >() {
+    if ( _creatures.size() > _size )
+      _creatures = _creatures.subList( 0, _size );
+
+    while ( _creatures.size() < _size )
+      _creatures.add( _factory.create() );
+  }
+
+  void sort( final Map< String, Float > fitnesses )
+  {
+    Collections.sort( _creatures, new Comparator< ICreature >() {
         @Override
-        public int compare( Creature a, Creature b )
+        public int compare( ICreature a, ICreature b )
         {
           return fitnesses.get( a.getGene() ).compareTo( fitnesses.get( b.getGene() ) );
         }
       } );
-  }
-}
-
-interface Algorithm
-{
-  void calcFitness();
-  void nextGeneration();
-  // Elitism
-  // Dropout
-  // Mutation
-  // Crossover
-
-
-  Creature getBest();
-  Creature getWorst();
-  Creature getMedian();
-}
-
-interface Fitness
-{
-  double getFitness( Creature creature );
-}
-
-class BasicCreatureFitness implements Fitness
-{
-  double getFitness( Creature creature )
-  {
-    double score = 0;
-
-    BasicCreature c = ( BasicCreature ) creature;
-
-    for ( int i = 0; i < 10; i++ )
-      for ( int j = 0; j < 10; j++ )
-      {
-        if ( i == j && c.get( i, j ) )
-          score += 1;
-        else if ( i != j && !c.get( i, j ) )
-          score += 1;
-        else
-          score -= 1;
-      }
-
-    return score;
-  }
-}
-
-class BasicCreatureAlgorithm implements Algorithm
-{
-  Population pop = new Population( 100, new BasicCreatureFactory() );
-  BasicCreatureFitness calc = new BasicCreatureFitness();
-  HashMap< String, Double > fitness = new HashMap< String, Double >();
-
-  void calcFitness()
-  {
-    for ( int i = 0; i < 100; i++ )
-    {
-      fitness.put( pop.get( i ).getGene(), calc.getFitness( pop.get( i ) ) );
-    }
-    pop.sort( fitness );
-  }
-
-  void nextGeneration()
-  {
-    for ( int i = 0; i < 50; i++ )
-      pop.remove( i );
-
-    pop.fill();
-  }
-
-  float getFitness( Creature creature )
-  {
-    return fitness.get( creature.getGene() ).floatValue();
-  }
-
-  Map< String, Float > getSpecies()
-  {
-    Map< String, Float > map = new TreeMap< String, Float >();
-    for ( int i = 0; i < 100; i++ )
-    {
-      Creature c = pop.get( i );
-      if ( !map.containsKey( c.getSpecies() ) )
-        map.put( c.getSpecies(), 1. );
-      else
-        map.put( c.getSpecies(), map.get( c.getSpecies() ) + 1 );
-    }
-
-    return map;
-  }
-
-  Creature getBest()
-  {
-    return pop.get( 99 );
-  }
-
-  Creature getWorst()
-  {
-    return pop.get( 0 );
-  }
-
-  Creature getMedian()
-  {
-    return pop.get( 50 );
   }
 }
